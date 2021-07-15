@@ -2,28 +2,30 @@ import React, { useState, useEffect } from 'react';
 import uuid from "uuid";
 import axios from 'axios';
 
-const useAxios = (url) => {
+function useLocalStorage(key, initialValue = []) {
+    if (localStorage.getItem(key)) {
+      initialValue = JSON.parse(localStorage.getItem(key));
+    }
+    const [value, setValue] = useState(initialValue);
+  
+    useEffect(() => {
+      localStorage.setItem(key, JSON.stringify(value));
+    }, [value, key]);
+  
+    return [value, setValue];
+};
 
-    const [state, setState] = useState([]);
-
-    const addObject = async () => {
-        const response = await axios.get(url);
-        setState(objects => [...objects, {...response.data, id: uuid()}]);
+function useAxios(keyInLS, baseUrl) {
+    const [responses, setResponses] = useLocalStorage(keyInLS);
+  
+    const addResponseData = async (formatter = data => data, restOfUrl = "") => {
+      const response = await axios.get(`${baseUrl}${restOfUrl}`);
+      setResponses(data => [...data, formatter(response.data)]);
     };
-
-    return [state, addObject];
-
-
-    // const [cards, addCard] = useAxios('https://deckofcardsapi.com/api/deck/new/draw/');
-    // const [pokemon, addPokemon] = useAxios(`https://pokeapi.co/api/v2/pokemon/${name}/`);
-    
-//   const [pokemon, setPokemon] = useState([]);
-//   const addPokemon = async name => {
-//     const response = await axios.get(
-//       `https://pokeapi.co/api/v2/pokemon/${name}/`
-//     );
-//     setPokemon(pokemon => [...pokemon, { ...response.data, id: uuid() }]);
-//   };
-}
+  
+    const clearResponses = () => setResponses([]);
+  
+    return [responses, addResponseData, clearResponses];
+};
 
 export default useAxios;
